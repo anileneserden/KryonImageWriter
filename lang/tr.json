@@ -1,0 +1,17 @@
+{
+  "window_title": "KryonImageWriter",
+  "step1": "1. İmaj Dosyasını Seçin (.iso / .img):",
+  "browse": "Gözat",
+  "no_file": "Seçilen dosya yok...",
+  "step2": "2. Hedef Sürücüyü Seçin:",
+  "refresh": "Yenile",
+  "start_flash": "Yazmaya Başla",
+  "select_file_warning": "Lütfen önce bir imaj dosyası seçin!",
+  "select_drive_warning": "Lütfen geçerli bir hedef sürücü seçin!",
+  "confirm_title": "Uyarı - Veri Kaybı Tehlikesi",
+  "confirm_msg": "/dev/{device} üzerindeki TÜM veriler kalıcı olarak silinecek! Devam etmek istiyor musunuz?",
+  "success_title": "Başarılı",
+  "success_msg": "İmaj sürücüye başarıyla yazıldı!",
+  "error_title": "Hata",
+  "no_drives": "Çıkarılabilir sürücü bulunamadı!"
+}

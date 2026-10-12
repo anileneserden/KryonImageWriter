@@ -1,0 +1,17 @@
+{
+  "window_title": "KryonImageWriter",
+  "step1": "1. Select Image File (.iso / .img):",
+  "browse": "Browse",
+  "no_file": "No file selected...",
+  "step2": "2. Select Target Drive:",
+  "refresh": "Refresh",
+  "start_flash": "Start Writing",
+  "select_file_warning": "Please select an image file first!",
+  "select_drive_warning": "Please select a valid target drive!",
+  "confirm_title": "Warning - Data Destruction",
+  "confirm_msg": "ALL data on /dev/{device} will be permanently erased! Do you want to continue?",
+  "success_title": "Success",
+  "success_msg": "Image successfully written to the drive!",
+  "error_title": "Error",
+  "no_drives": "No removable drives found!"
+}
