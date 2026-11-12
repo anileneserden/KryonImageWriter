@@ -1,13 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 block_cipher = None
+
+# PyQt6 altındaki tüm gizli modülleri otomatik topla
+hidden_imports = collect_submodules('PyQt6')
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('lang', 'lang')],  # lang klasörünü exe'nin içine dahil ediyoruz
-    hiddenimports=['PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets'],
+    datas=[('lang', 'lang')],  # lang klasörü
+    hiddenimports=hidden_imports,  # Tüm PyQt6 modüllerini ekledik
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -26,7 +30,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='KryonImageWriter',
+    name='LenorImageWriter',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

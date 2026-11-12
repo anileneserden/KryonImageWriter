@@ -4,11 +4,11 @@ import json
 import subprocess
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QComboBox, QFileDialog, QProgressBar, QMessageBox
+    QLabel, QPushButton, QComboBox, QFileDialog, QProgressBar, QMessageBox, QCheckBox
 )
 from PyQt6.QtCore import Qt
 
-class KryonImageWriter(QMainWindow):
+class LenorImageWriter(QMainWindow):
     def __init__(self):
         super().__init__()
         self.current_lang = "en"  # Varsayılan dil İngilizce
@@ -49,7 +49,7 @@ class KryonImageWriter(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle(self.tr_text("window_title"))
-        self.setFixedSize(540, 440)
+        self.setFixedSize(540, 480)  # Pencere yüksekliğini yeni seçenek için biraz artırdık
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -60,7 +60,7 @@ class KryonImageWriter(QMainWindow):
         # Üst Kısım: Başlık ve Sağ Üstte Dil Seçici
         top_layout = QHBoxLayout()
         
-        self.title_label = QLabel("KryonImageWriter", self)
+        self.title_label = QLabel("LenorImageWriter", self)
         self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #3daee9;")
         
         self.lang_combo = QComboBox(self)
@@ -100,6 +100,7 @@ class KryonImageWriter(QMainWindow):
         
         self.refresh_drives_btn = QPushButton(self.tr_text("refresh"), self)
         self.refresh_drives_btn.setFixedWidth(90)
+        self.refresh_drivin_btn_clicked = self.load_drives
         self.refresh_drives_btn.clicked.connect(self.load_drives)
         
         drive_box_layout = QHBoxLayout()
@@ -108,6 +109,13 @@ class KryonImageWriter(QMainWindow):
 
         main_layout.addWidget(self.step2_label)
         main_layout.addLayout(drive_box_layout)
+
+        # 3. Adım / Seçenek: Bölümleme (Kalan alanı FAT32 yap)
+        # Not: tr_text içine metin ekleyebilmek için json dosyalarına anahtar ekleyeceğiz
+        self.partition_checkbox = QCheckBox(self.tr_text("partition_option") if "partition_option" in self.translations.get(self.current_lang, {}) else "Format remaining space as FAT32 data partition", self)
+        self.partition_checkbox.setChecked(True) # Varsayılan olarak seçili gelsin
+        self.partition_checkbox.setStyleSheet("color: #ecf0f1; font-size: 13px;")
+        main_layout.addWidget(self.partition_checkbox)
 
         # İlerleme Çubuğu
         self.progress_bar = QProgressBar(self)
@@ -187,9 +195,9 @@ class KryonImageWriter(QMainWindow):
             QMessageBox.warning(self, self.tr_text("error_title"), self.tr_text("select_drive_warning"))
             return
 
-        # Sürücü adını ayıkla (Örn: "sdb   14.9G   1   SanDisk Cruzer" -> "sdb")
         target_device = target_item.split()[0]
         device_path = f"/dev/{target_device}"
+        use_partitioning = self.partition_checkbox.isChecked()
 
         msg = self.tr_text("confirm_msg").format(device=target_device)
         reply = QMessageBox.question(
@@ -199,22 +207,68 @@ class KryonImageWriter(QMainWindow):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            # pkexec ile root yetkisi alarak dd komutunu çalıştır
-            # sync komutu verinin tamamen diske yazılmasını garantiler
-            dd_cmd = f"pkexec dd if='{file_path}' of={device_path} bs=4M status=progress conv=fsync"
-            
             try:
-                self.progress_bar.setValue(50) # İşlem başlangıç göstergesi
-                process = subprocess.run(dd_cmd, shell=True, check=True)
+                self.progress_bar.setValue(20)
+                
+                if use_partitioning:
+                    # 1. ISO dosyasının boyutunu MB olarak al
+                    iso_size_bytes = os.path.getsize(file_path)
+                    iso_size_mb = (iso_size_bytes // (1024 * 1024)) + 20  # Emniyet payı
+
+                    # 2. sfdisk ve wipefs kullanarak blok boyutu takıntısı olmadan güvenli hibrit yapı
+                    script_commands = f"""
+                    wipefs -a {device_path} >/dev/null 2>&1 || true
+                    dd if='{file_path}' of={device_path} bs=4M status=progress conv=fsync
+                    sync
+                    
+                    # ISO diskin başına yazıldıktan sonra kalan boş alanı FAT32 veri alanı yap
+                    echo ",,0xc" | sfdisk --append {device_path} >/dev/null 2>&1 || true
+                    sync
+                    
+                    # İkinci bölüme FAT32 dosya sistemini kur
+                    mkfs.vfat -F32 -n "KRYON_DATA" {device_path}2
+                    sync
+                    """
+                    
+                    self.progress_bar.setValue(50)
+                    subprocess.run(f"pkexec bash -c '{script_commands}'", shell=True, check=True)
+                else:
+                    # Klasik tüm diske direkt dd basma yöntemi
+                    dd_cmd = f"pkexec dd if='{file_path}' of={device_path} bs=4M status=progress conv=fsync"
+                    self.progress_bar.setValue(50)
+                    subprocess.run(dd_cmd, shell=True, check=True)
+
                 self.progress_bar.setValue(100)
                 QMessageBox.information(self, self.tr_text("success_title"), self.tr_text("success_msg"))
                 self.progress_bar.setValue(0)
+                
             except subprocess.CalledProcessError as e:
                 self.progress_bar.setValue(0)
-                QMessageBox.critical(self, self.tr_text("error_title"), f"Flashing failed: {e}")
+                QMessageBox.critical(self, self.tr_text("error_title"), f"Operation failed: {e}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = KryonImageWriter()
+    
+    # --- KULLANICI / SUDO BAĞIMSIZ KOYU TEMA AYARI ---
+    from PyQt6.QtGui import QPalette, QColor
+    app.setStyle("Fusion")
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+    dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, Qt.GlobalColor.white)
+    dark_palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+    dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+    dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+    dark_palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+    dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black)
+    app.setPalette(dark_palette)
+    # ------------------------------------------------
+    
+    window = LenorImageWriter()
     window.show()
     sys.exit(app.exec())

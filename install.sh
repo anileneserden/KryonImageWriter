@@ -6,7 +6,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # Color Reset
 
-echo -e "${BLUE}=== KryonImageWriter Otomatik Kurulum Aracı ===${NC}"
+echo -e "${BLUE}=== LenorImageWriter Otomatik Kurulum Aracı ===${NC}"
 
 # 1. Gerekli sistem araçlarının kontrolü
 for cmd in git python3 pip; do
@@ -16,7 +16,7 @@ for cmd in git python3 pip; do
     fi
 done
 
-INSTALL_DIR="$HOME/.local/share/KryonImageWriter"
+INSTALL_DIR="$HOME/.local/share/LenorImageWriter"
 
 # 2. Projeyi klonlama veya güncelleme
 if [ -d "$INSTALL_DIR" ]; then
@@ -25,7 +25,7 @@ if [ -d "$INSTALL_DIR" ]; then
     git pull
 else
     echo -e "${BLUE}[*] Proje GitHub'dan klonlanıyor...${NC}"
-    git clone https://github.com/anileneserden/KryonImageWriter.git "$INSTALL_DIR"
+    git clone https://github.com/anileneserden/LenorImageWriter.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
 
@@ -37,26 +37,26 @@ pip install --upgrade pip
 pip install PyQt6 pyinstaller
 
 # 4. PyInstaller ile derleme
-echo -e "${BLUE}[*] KryonImageWriter derleniyor...${NC}"
-pyinstaller kryon_writer.spec
+echo -e "${BLUE}[*] LenorImageWriter derleniyor...${NC}"
+pyinstaller lenor_writer.spec
 
 # 5. Çalıştırılabilir dosyayı /usr/local/bin altına bağlama (Root yetkisi ister)
 echo -e "${BLUE}[*] Sistem yoluna (/usr/local/bin) ekleniyor...${NC}"
-sudo ln -sf "$INSTALL_DIR/dist/KryonImageWriter" /usr/local/bin/KryonImageWriter
+sudo ln -sf "$INSTALL_DIR/dist/LenorImageWriter" /usr/local/bin/LenorImageWriter
 
 # 6. Başlat menüsü (.desktop) kısayolunu oluşturma
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
 
-cat << EOF > "$DESKTOP_DIR/kryon-image-writer.desktop"
+cat << EOF > "$DESKTOP_DIR/lenor-image-writer.desktop"
 [Desktop Entry]
 Type=Application
-Name=KryonImageWriter
+Name=LenorImageWriter
 Comment=Lightweight and modular OS image flashing tool
-Exec=/usr/local/bin/KryonImageWriter
+Exec=/usr/local/bin/LenorImageWriter
 Icon=drive-removable-media
 Categories=System;Utility;
 Terminal=false
 EOF
 
-echo -e "${GREEN}[+] Kurulum başarıyla tamamlandı! KryonImageWriter artık başlat menünüzde ve terminalde hazır!${NC}"
+echo -e "${GREEN}[+] Kurulum başarıyla tamamlandı! LenorImageWriter artık başlat menünüzde ve terminalde hazır!${NC}"
